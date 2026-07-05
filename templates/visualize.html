@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGPI Visualizer — Result Ledger</title>
+<meta name="description" content="Visualize the SGPI distribution for a batch of students." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topnav">
+  <div class="container topnav-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">RL</span>
+      Result Ledger
+    </div>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-pill" href="{{ url_for('index') }}"><span class="full">Dashboard</span></a>
+      <a class="nav-pill active" href="{{ url_for('visualize') }}"><span class="full">Visualize</span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="container" style="padding: 44px 28px 100px;">
+  <div class="panel-header" style="margin-bottom: 30px;">
+    <h2 style="font-size: 1.7rem;">SGPI distribution</h2>
+    <p>Upload the same result PDF to see how SGPI is spread across the batch.</p>
+  </div>
+
+  <div class="two-col" style="align-items:start;">
+    <div class="upload-card" style="margin:0;">
+      <h3>Upload result sheet</h3>
+      <div class="sub">PDF exported from the university result portal</div>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload PDF file">
+        <div class="icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="dz-title">Drag &amp; drop your PDF here</div>
+        <div class="dz-sub">or click to browse — .pdf only</div>
+        <div class="dz-file" id="dzFileLabel"></div>
+      </div>
+      <input type="file" id="fileInput" name="file" accept="application/pdf" hidden />
+
+      <div class="field-row">
+        <label for="semesterInput">Semester</label>
+        <select id="semesterInput" name="semester">
+          <option value="Semester 1">Semester 1</option>
+          <option value="Semester 2">Semester 2</option>
+        </select>
+      </div>
+
+      <div class="field-row-split">
+        <div class="field-row">
+          <label for="fromSeatInput">From seat no. <span style="color:var(--text-tertiary); font-weight:400;">(optional)</span></label>
+          <input type="text" id="fromSeatInput" name="from_seat" placeholder="e.g. 2200001" />
+        </div>
+        <div class="field-row">
+          <label for="toSeatInput">To seat no. <span style="color:var(--text-tertiary); font-weight:400;">(optional)</span></label>
+          <input type="text" id="toSeatInput" name="to_seat" placeholder="e.g. 2200060" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnVisualize" type="button">Plot SGPI distribution</button>
+    </div>
+
+    <div class="card" style="margin:0;">
+      <h3>Distribution</h3>
+      <div class="card-sub">Number of students per SGPI band</div>
+      <div class="chart-wrap"><canvas id="sgpiChart"></canvas></div>
+
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr); margin-top:22px; margin-bottom:0;">
+        <div class="stat-card">
+          <div class="stat-value" id="statCount" style="font-size:1.4rem;">0</div>
+          <div class="stat-label">Students with SGPI</div>
+        </div>
+        <div class="stat-card pass">
+          <div class="stat-value" id="statAvg" style="font-size:1.4rem;">0.00</div>
+          <div class="stat-label">Average SGPI</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="stat-value" id="statTop" style="font-size:1.4rem;">0.00</div>
+          <div class="stat-label">Highest SGPI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="loading-text" id="loadingText">Crunching SGPI values…</div>
+</div>
+
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='js/visualize.js') }}"></script>
+</body>
+</html>

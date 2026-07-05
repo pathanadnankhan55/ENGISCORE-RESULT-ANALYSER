@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Result Ledger — Instant Mark-Sheet Insight</title>
+<meta name="description" content="Upload a semester result PDF and get instant student lookups, class-wide analytics, subject pass/fail breakdowns, and Excel export." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<!-- ============ TOP NAV ============ -->
+<header class="topnav">
+  <div class="container topnav-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">RL</span>
+      Result Ledger
+    </div>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-pill active" href="#dashboard"><span class="full">Dashboard</span></a>
+      <a class="nav-pill" href="{{ url_for('visualize') }}"><span class="full">Visualize</span></a>
+      <a class="nav-pill nav-cta" href="#upload-card">Upload PDF</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot" aria-hidden="true"></span> Built for exam cells &amp; class coordinators</span>
+      <h1>Turn raw mark sheets into <span class="accent">instant insight.</span></h1>
+      <p class="lead">
+        Drop in a semester result PDF and get per-student lookups, class-wide pass/fail
+        analytics, subject-level breakdowns, and a clean Excel export — without touching a
+        single row by hand.
+      </p>
+
+      <div class="hero-stats-row">
+        <div class="hero-stat">
+          <div class="num">5</div>
+          <div class="label">automated reports</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">&lt;10s</div>
+          <div class="label">to parse a full batch</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">0</div>
+          <div class="label">manual data entry</div>
+        </div>
+      </div>
+
+      <div class="ledger-ticker" aria-hidden="true">
+        <div class="ledger-track" id="ledgerTrack"></div>
+      </div>
+    </div>
+
+    <div class="upload-card" id="upload-card">
+      <h3>Upload result sheet</h3>
+      <div class="sub">PDF exported from the university result portal</div>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload PDF file">
+        <div class="icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="dz-title">Drag &amp; drop your PDF here</div>
+        <div class="dz-sub">or click to browse — .pdf only</div>
+        <div class="dz-file" id="dzFileLabel"></div>
+      </div>
+      <input type="file" id="fileInput" name="file" accept="application/pdf" hidden />
+
+      <div class="field-row">
+        <label for="semesterInput">Semester</label>
+        <select id="semesterInput" name="semester">
+          <option value="Semester 1">Semester 1</option>
+          <option value="Semester 2">Semester 2</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" type="button" onclick="document.getElementById('dashboard').scrollIntoView({behavior:'smooth'})">
+        Continue to dashboard
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP SHELL ============ -->
+<main class="container app-shell" id="dashboard">
+
+  <aside class="sidebar" aria-label="Dashboard sections">
+    <div class="sidebar-label">Workspace</div>
+    <div class="side-link active" data-panel="panel-overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Overview
+    </div>
+    <div class="side-link" data-panel="panel-lookup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Student lookup
+    </div>
+    <div class="side-link" data-panel="panel-subjects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Subject analysis
+    </div>
+    <div class="side-link" data-panel="panel-export">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </div>
+    <div class="sidebar-divider"></div>
+    <a class="side-link" href="{{ url_for('visualize') }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      SGPI visualizer
+    </a>
+  </aside>
+
+  <div class="panels">
+
+    <!-- ================= OVERVIEW PANEL ================= -->
+    <section class="panel active" id="panel-overview">
+      <div class="panel-header">
+        <h2>Class overview</h2>
+        <p>Run the numbers for the whole batch, or narrow it to a seat-number range.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <h3>Seat number range</h3>
+        <div class="card-sub">Leave blank to include every student in the file</div>
+        <div class="field-row-split">
+          <div class="field-row">
+            <label for="fromSeatInput">From seat no.</label>
+            <input type="text" id="fromSeatInput" name="from_seat" placeholder="e.g. 2200001" />
+          </div>
+          <div class="field-row">
+            <label for="toSeatInput">To seat no.</label>
+            <input type="text" id="toSeatInput" name="to_seat" placeholder="e.g. 2200060" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btnAnalyze" type="button">Analyze results</button>
+      </div>
+
+      <div id="analysisEmpty" class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <p>Upload a PDF and click <strong>Analyze results</strong> to see class statistics here.</p>
+      </div>
+
+      <div id="analysisResults" style="display:none;">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total students</div>
+          </div>
+          <div class="stat-card pass">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div class="stat-value" id="statPass">0</div>
+            <div class="stat-label">Successful</div>
+          </div>
+          <div class="stat-card fail">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+            <div class="stat-value" id="statFail">0</div>
+            <div class="stat-label">Unsuccessful</div>
+          </div>
+          <div class="stat-card warn">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+            <div class="stat-value" id="statAbsent">0</div>
+            <div class="stat-label">Absent</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Result distribution</h3>
+          <div class="card-sub">Successful vs. unsuccessful vs. absent, for the selected range</div>
+          <div class="chart-wrap short"><canvas id="overviewChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LOOKUP PANEL ================= -->
+    <section class="panel" id="panel-lookup">
+      <div class="panel-header">
+        <h2>Student lookup</h2>
+        <p>Find one student's full subject-wise marks, status, and SGPI.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="field-row">
+          <label for="seatNoInput">Seat number</label>
+          <input type="text" id="seatNoInput" name="seat_no" placeholder="e.g. 2200034" />
+        </div>
+        <button class="btn btn-primary" id="btnLookup" type="button">Look up student</button>
+      </div>
+
+      <div id="resultEmpty" class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>Enter a seat number above to pull up a student's results.</p>
+      </div>
+
+      <div class="card result-card" id="resultCard">
+        <div class="result-head">
+          <div>
+            <div class="name" id="resultName">—</div>
+            <div class="seat" id="resultSeat">—</div>
+          </div>
+          <span class="status-badge pass" id="resultStatusBadge">—</span>
+        </div>
+
+        <table class="subject-table">
+          <thead>
+            <tr><th>Subject</th><th>Marks</th></tr>
+          </thead>
+          <tbody id="resultTableBody"></tbody>
+        </table>
+
+        <div class="sgpi-badge" id="sgpiWrap" style="display:none;">
+          <div class="sgpi-val" id="sgpiValue">—</div>
+          <div class="sgpi-label">Final SGPI</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SUBJECT ANALYSIS PANEL ================= -->
+    <section class="panel" id="panel-subjects">
+      <div class="panel-header">
+        <h2>Subject analysis</h2>
+        <p>Pass and fail counts per subject, using the same seat range as the overview.</p>
+      </div>
+
+      <div class="card">
+        <h3>Subject-wise pass / fail</h3>
+        <div class="card-sub">Run "Analyze results" from the Overview tab to populate this chart</div>
+        <div class="chart-wrap"><canvas id="subjectChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ================= EXPORT PANEL ================= -->
+    <section class="panel" id="panel-export">
+      <div class="panel-header">
+        <h2>Export to Excel</h2>
+        <p>Download the full parsed result sheet as a formatted spreadsheet.</p>
+      </div>
+
+      <div class="card export-hero">
+        <div class="icon-lg" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3>Results.xlsx</h3>
+        <p style="color:var(--text-secondary); max-width:44ch; margin:8px auto 24px; font-size:0.92rem;">
+          Includes every student's seat number, name, subject-wise marks, final status, and SGPI —
+          built directly from the uploaded PDF above.
+        </p>
+        <button class="btn btn-primary" id="btnExport" type="button" style="max-width:260px; margin:0 auto;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download spreadsheet
+        </button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer container">
+  <span>Result Ledger — internal exam-cell tooling</span>
+  <span>Files are processed and discarded, never stored</span>
+</footer>
+
+<!-- ============ LOADING OVERLAY ============ -->
+<div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="loading-text" id="loadingText">Reading mark sheet…</div>
+</div>
+
+<!-- ============ TOASTS ============ -->
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
